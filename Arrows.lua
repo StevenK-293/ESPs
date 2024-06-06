@@ -1,5 +1,5 @@
 local Settings = {
-    Enabled = true,
+    Enabled = false,
     DistFromCenter = 80,
     TriangleHeight = 16,
     TriangleWidth = 16,
