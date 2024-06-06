@@ -1,22 +1,20 @@
--- Made by Blissful#4992
+local Settings = {
+    Enabled = true,
+    DistFromCenter = 80,
+    TriangleHeight = 16,
+    TriangleWidth = 16,
+    TriangleFilled = true,
+    TriangleTransparency = 0,
+    TriangleThickness = 1,
+    TriangleColor = Color3.fromRGB(255, 255, 255),
+    AntiAliasing = false
+}
 
-local DistFromCenter = 80
-local TriangleHeight = 16
-local TriangleWidth = 16
-local TriangleFilled = true
-local TriangleTransparency = 0
-local TriangleThickness = 1
-local TriangleColor = Color3.fromRGB(255, 255, 255)
-local AntiAliasing = false
-
-----------------------------------------------------------------
-
-local Players = game:service("Players")
+local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
-local RS = game:service("RunService")
+local RS = game:GetService("RunService")
 
-local V3 = Vector3.new
 local V2 = Vector2.new
 local CF = CFrame.new
 local COS = math.cos
@@ -27,7 +25,7 @@ local CWRAP = coroutine.wrap
 local ROUND = math.round
 
 local function GetRelative(pos, char)
-    if not char then return V2(0,0) end
+    if not char then return V2(0, 0) end
 
     local rootP = char.PrimaryPart.Position
     local camP = Camera.CFrame.Position
@@ -37,7 +35,7 @@ local function GetRelative(pos, char)
 end
 
 local function RelativeToCenter(v)
-    return Camera.ViewportSize/2 - v
+    return Camera.ViewportSize / 2 - v
 end
 
 local function RotateVect(v, a)
@@ -52,54 +50,59 @@ local function DrawTriangle(color)
     local l = DRAWING("Triangle")
     l.Visible = false
     l.Color = color
-    l.Filled = TriangleFilled
-    l.Thickness = TriangleThickness
-    l.Transparency = 1-TriangleTransparency
+    l.Filled = Settings.TriangleFilled
+    l.Thickness = Settings.TriangleThickness
+    l.Transparency = 1 - Settings.TriangleTransparency
     return l
 end
 
 local function AntiA(v)
-    if (not AntiAliasing) then return v end
+    if (not Settings.AntiAliasing) then return v end
     return V2(ROUND(v.x), ROUND(v.y))
 end
 
-local function ShowArrow(PLAYER)
-    local Arrow = DrawTriangle(TriangleColor)
+local function ShowArrow(player)
+    if not Settings.Enabled then return end
+
+    local arrow = DrawTriangle(Settings.TriangleColor)
 
     local function Update()
-        local c ; c = RS.RenderStepped:Connect(function()
-            if PLAYER and PLAYER.Character then
-                local CHAR = PLAYER.Character
-                local HUM = CHAR:FindFirstChildOfClass("Humanoid")
+        local connection
+        connection = RS.RenderStepped:Connect(function()
+            if player and player.Character then
+                local character = player.Character
+                local humanoid = character:FindFirstChildOfClass("Humanoid")
 
-                if HUM and CHAR.PrimaryPart ~= nil and HUM.Health > 0 then
-                    local _,vis = Camera:WorldToViewportPoint(CHAR.PrimaryPart.Position)
-                    if vis == false then
-                        local rel = GetRelative(CHAR.PrimaryPart.Position, Player.Character)
-                        local direction = rel.unit
+                if humanoid and character.PrimaryPart and humanoid.Health > 0 then
+                    local _, isVisible = Camera:WorldToViewportPoint(character.PrimaryPart.Position)
+                    if not isVisible then
+                        local relative = GetRelative(character.PrimaryPart.Position, Player.Character)
+                        local direction = relative.unit
 
-                        local base  = direction * DistFromCenter
-                        local sideLength = TriangleWidth/2
+                        local base = direction * Settings.DistFromCenter
+                        local sideLength = Settings.TriangleWidth / 2
                         local baseL = base + RotateVect(direction, 90) * sideLength
                         local baseR = base + RotateVect(direction, -90) * sideLength
 
-                        local tip = direction * (DistFromCenter + TriangleHeight)
-                        
-                        Arrow.PointA = AntiA(RelativeToCenter(baseL))
-                        Arrow.PointB = AntiA(RelativeToCenter(baseR))
+                        local tip = direction * (Settings.DistFromCenter + Settings.TriangleHeight)
 
-                        Arrow.PointC = AntiA(RelativeToCenter(tip))
+                        arrow.PointA = AntiA(RelativeToCenter(baseL))
+                        arrow.PointB = AntiA(RelativeToCenter(baseR))
+                        arrow.PointC = AntiA(RelativeToCenter(tip))
 
-                        Arrow.Visible = true
+                        arrow.Visible = true
+                    else
+                        arrow.Visible = false
+                    end
+                else
+                    arrow.Visible = false
+                end
+            else
+                arrow.Visible = false
 
-                    else Arrow.Visible = false end
-                else Arrow.Visible = false end
-            else 
-                Arrow.Visible = false
-
-                if not PLAYER or not PLAYER.Parent then
-                    Arrow:Remove()
-                    c:Disconnect()
+                if not player or not player.Parent then
+                    arrow:Remove()
+                    connection:Disconnect()
                 end
             end
         end)
@@ -108,14 +111,14 @@ local function ShowArrow(PLAYER)
     CWRAP(Update)()
 end
 
-for _,v in pairs(Players:GetChildren()) do
-    if v.Name ~= Player.Name then
-        ShowArrow(v)
+for _, player in ipairs(Players:GetPlayers()) do
+    if player.Name ~= Player.Name then
+        ShowArrow(player)
     end
 end
 
-Players.PlayerAdded:Connect(function(v)
-    if v.Name ~= Player.Name then
-        ShowArrow(v)
+Players.PlayerAdded:Connect(function(player)
+    if player.Name ~= Player.Name then
+        ShowArrow(player)
     end
 end)
